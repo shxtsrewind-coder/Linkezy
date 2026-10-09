@@ -1,0 +1,828 @@
+<title>Linkezy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@600&display=swap">
+<style>
+/* Layout: one centred column read like a transit sign — line sign, live stats, square board, controls */
+:root {
+  --bg: #e7eae5;
+  --surface: #f8f9f5;
+  --rule: #d5dad2;
+  --ink: #1a2025;
+  --muted: #59646a;
+  --sign: #1b3a8c;
+  --sign-ink: #ffffff;
+  --good: #1d8549;
+  --scrim: rgba(20, 26, 32, 0.45);
+  --font-display: "Overpass", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Overpass Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1116; --surface: #151a21; --rule: #262e38; --ink: #e8ecef; --muted: #93a0aa;
+    --sign: #2b52c4; --sign-ink: #ffffff; --good: #46c47c; --scrim: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1116; --surface: #151a21; --rule: #262e38; --ink: #e8ecef; --muted: #93a0aa;
+  --sign: #2b52c4; --sign-ink: #ffffff; --good: #46c47c; --scrim: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  padding-inline: 16px;
+  padding-block: 14px 28px;
+  -webkit-tap-highlight-color: transparent;
+}
+.app { max-width: 540px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 26px; letter-spacing: -0.02em; }
+.brand svg { flex: none; }
+.tabs { display: flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 3px; }
+.tabs button {
+  font: 800 13px/1 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase;
+  border: 0; background: transparent; color: var(--muted); padding: 9px 14px 7px; border-radius: 999px; cursor: pointer;
+}
+.tabs button[aria-pressed="true"] { background: var(--sign); color: var(--sign-ink); }
+
+/* line sign */
+.sign {
+  background: var(--sign); color: var(--sign-ink); border-radius: 10px;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 8px;
+}
+.roundel {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; border: 5px solid var(--sign-ink);
+  display: grid; place-items: center; font: 600 15px/1 var(--font-mono); padding-top: 2px;
+}
+.sign-text { min-width: 0; flex: 1; }
+.sign-title { font-weight: 900; font-size: 19px; letter-spacing: 0.01em; line-height: 1.1; }
+.sign-sub { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-top: 3px; }
+.sign-nav { display: flex; gap: 6px; }
+.sign-nav button {
+  width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.5); background: transparent;
+  color: var(--sign-ink); font: 800 18px/1 var(--font-display); cursor: pointer;
+}
+.sign-nav button:disabled { opacity: 0.35; cursor: default; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.stat {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 7px 8px 5px;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.stat b { font: 600 17px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat span { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crowd { font-size: 13px; color: var(--muted); text-align: center; min-height: 0; }
+.crowd strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* board */
+.board-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; }
+canvas#board {
+  width: 100%; height: 100%; display: block; touch-action: none; border-radius: 12px;
+  cursor: crosshair; outline: none;
+}
+canvas#board:focus-visible { box-shadow: 0 0 0 3px var(--sign); }
+
+/* controls */
+.controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.btn {
+  font: 800 13px/1 var(--font-display); letter-spacing: 0.05em; text-transform: uppercase;
+  border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink);
+  border-radius: 9px; padding: 12px 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { border-color: var(--muted); }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn.primary { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--sign); outline-offset: 2px; }
+
+.toast {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  background: var(--ink); color: var(--surface); font-weight: 600; font-size: 13.5px;
+  padding: 10px 14px 8px; border-radius: 8px; max-width: calc(100% - 24px); text-align: center; pointer-events: none;
+}
+
+/* sheets */
+.sheet-scrim { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: end center; z-index: 10; padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.sheet {
+  width: 100%; max-width: 520px; background: var(--surface); color: var(--ink); border-radius: 16px;
+  padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 14px; max-height: 86vh; overflow: auto;
+  animation: rise 220ms ease-out;
+}
+@keyframes rise { from { transform: translateY(16px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
+.sheet h2 { margin: 0; font-size: 24px; font-weight: 900; text-wrap: balance; }
+.sheet p { margin: 0; line-height: 1.5; color: var(--muted); }
+.result-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.result-row div { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 8px 8px; text-align: center; }
+.result-row b { display: block; font: 600 22px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.result-row span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.share { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.share a, .share button { text-decoration: none; }
+.badge { align-self: flex-start; font: 800 11px/1 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; background: var(--good); color: #fff; padding: 6px 9px 4px; border-radius: 6px; }
+.rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; line-height: 1.45; }
+.level-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 58px)); justify-content: space-between; gap: 8px 6px; }
+.level-grid button {
+  aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--rule); background: transparent; color: var(--ink);
+  font: 600 14px/1 var(--font-mono); cursor: pointer; padding-top: 2px;
+}
+.level-grid button.done { border-color: var(--good); background: var(--good); color: #fff; }
+.level-grid button.current { border-color: var(--sign); border-width: 3px; }
+.level-band { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); grid-column: 1 / -1; margin-top: 6px; }
+.sheet-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sheet-actions .btn { flex: 1 1 140px; }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand" aria-label="Linkezy">
+      <svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true">
+        <path d="M6 16 H17 V6 H28" fill="none" stroke="#e4002b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="6" cy="16" r="5.2" fill="#e4002b"/><circle cx="28" cy="6" r="5.2" fill="#e4002b"/>
+      </svg>
+      Linkezy
+    </div>
+    <nav class="tabs" aria-label="Mode">
+      <button id="tabDaily" aria-pressed="true">Daily</button>
+      <button id="tabLevels" aria-pressed="false">Levels</button>
+    </nav>
+  </header>
+
+  <section class="sign" aria-live="polite">
+    <div class="roundel" id="signNum">1</div>
+    <div class="sign-text">
+      <div class="sign-title" id="signTitle">Daily line</div>
+      <div class="sign-sub" id="signSub">Friday · 10 × 10</div>
+    </div>
+    <div class="sign-nav" id="levelNav" hidden>
+      <button id="prevLevel" aria-label="Previous level">‹</button>
+      <button id="nextLevel" aria-label="Next level">›</button>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Progress">
+    <div class="stat"><b id="statLines">0/0</b><span>Lines</span></div>
+    <div class="stat"><b id="statFill">0%</b><span>Filled</span></div>
+    <div class="stat"><b id="statMoves">0</b><span>Moves</span></div>
+    <div class="stat"><b id="statSide">0:00</b><span id="statSideLabel">Time</span></div>
+  </section>
+  <div class="crowd" id="crowd" hidden></div>
+
+  <div class="board-wrap" id="boardWrap">
+    <canvas id="board" tabindex="0" role="img" aria-label="Puzzle board. Drag from a dot to draw a line to the dot of the same colour."></canvas>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+
+  <section class="controls">
+    <button class="btn" id="undoBtn">Undo</button>
+    <button class="btn" id="resetBtn">Restart</button>
+    <button class="btn" id="hintBtn">Hint</button>
+    <button class="btn" id="abcBtn" aria-pressed="false" title="Show letters on the dots">ABC</button>
+  </section>
+  <section class="controls" style="grid-template-columns: 1fr 1fr;">
+    <button class="btn" id="helpBtn">How to play</button>
+    <button class="btn" id="allLevelsBtn">All levels</button>
+  </section>
+</div>
+
+<div class="sheet-scrim" id="winSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <span class="badge" id="winBadge">Solved</span>
+    <h2 id="winTitle">Line complete</h2>
+    <div class="result-row">
+      <div><b id="winTime">0:00</b><span>Time</span></div>
+      <div><b id="winMoves">0</b><span>Moves</span></div>
+      <div><b id="winThird">0</b><span id="winThirdLabel">Streak</span></div>
+    </div>
+    <p id="winNote"></p>
+    <div class="share">
+      <button class="btn" id="copyShare">Copy</button>
+      <a class="btn" id="waShare" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn" id="xShare" target="_blank" rel="noopener">Post on X</a>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" id="winClose">View board</button>
+      <button class="btn primary" id="winNext">Play levels</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-scrim" id="helpSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">How to play</h2>
+    <ol class="rules">
+      <li>Drag from a dot to the other dot of the same colour to lay a line.</li>
+      <li>Lines can't cross or branch. Draw over another line to cut it back.</li>
+      <li>The board is solved when every pair is linked <strong>and</strong> every square is covered.</li>
+      <li>The daily line is the same for everyone and grows from 7 × 7 on Monday to 11 × 11 at the weekend. Solve it each day to keep your streak.</li>
+      <li>Perfect means you finished with one move per colour and no hints.</li>
+    </ol>
+    <p>Tap <strong>ABC</strong> to put letters on the dots if colours are hard to tell apart.</p>
+    <div class="sheet-actions"><button class="btn primary" id="helpClose">Got it</button></div>
+  </div>
+</div>
+
+<div class="sheet-scrim" id="levelsSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="levelsTitle">
+    <h2 id="levelsTitle">All levels</h2>
+    <p id="levelsSummary"></p>
+    <div class="level-grid" id="levelGrid"></div>
+    <div class="sheet-actions"><button class="btn" id="levelsClose">Close</button></div>
+  </div>
+</div>
+
+<script>
+// ---------------- config ----------------
+// Fill these in on bgameworld to turn on shared solver counts (see supabase.sql).
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+const LAUNCH_DATE = '2026-10-09';       // daily line No. 1
+const LEVEL_COUNT = 100;
+const SITE = /bgameworld\.com$/.test(location.hostname) ? location.origin : 'https://linkezy.bgameworld.com';
+
+// ---------------- core (generator + rules) ----------------
+function hashStr(str) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0) ^ (h1 >>> 0);
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function neighbors(c, W, H) {
+  const x = c % W, y = (c / W) | 0, out = [];
+  if (x > 0) out.push(c - 1);
+  if (x < W - 1) out.push(c + 1);
+  if (y > 0) out.push(c - W);
+  if (y < H - 1) out.push(c + W);
+  return out;
+}
+function isAdj(a, b, W) {
+  const ax = a % W, ay = (a / W) | 0, bx = b % W, by = (b / W) | 0;
+  return Math.abs(ax - bx) + Math.abs(ay - by) === 1;
+}
+function hamiltonianPath(W, H, rng) {
+  const N = W * H, path = new Int32Array(N);
+  let k = 0;
+  for (let y = 0; y < H; y++) {
+    if (y % 2 === 0) for (let x = 0; x < W; x++) path[k++] = y * W + x;
+    else for (let x = W - 1; x >= 0; x--) path[k++] = y * W + x;
+  }
+  const pos = new Int32Array(N);
+  for (let i = 0; i < N; i++) pos[path[i]] = i;
+  const rev = (a, b) => { while (a < b) { const t = path[a]; path[a] = path[b]; path[b] = t; pos[path[a]] = a; pos[path[b]] = b; a++; b--; } };
+  const iters = N * N * 4;
+  for (let it = 0; it < iters; it++) {
+    if (rng() < 0.5) {
+      const nb = neighbors(path[N - 1], W, H), i = pos[nb[(rng() * nb.length) | 0]];
+      if (i !== N - 2) rev(i + 1, N - 1);
+    } else {
+      const nb = neighbors(path[0], W, H), i = pos[nb[(rng() * nb.length) | 0]];
+      if (i !== 1) rev(0, i - 1);
+    }
+  }
+  return Array.from(path);
+}
+function cutSegments(path, W, rng, pairs, maxColors) {
+  const N = path.length, avg = N / pairs, minL = 3;
+  const maxL = Math.max(minL + 1, Math.round(2 * avg - minL));
+  const segs = [];
+  let i = 0;
+  while (i < N) {
+    const rem = N - i;
+    let L;
+    if (rem <= maxL) L = rem;
+    else { L = minL + ((rng() * (maxL - minL + 1)) | 0); if (rem - L < minL) L = rem - minL; }
+    segs.push(path.slice(i, i + L));
+    i += L;
+  }
+  if (segs[segs.length - 1].length < minL || segs.length > maxColors) return null;
+  for (const s of segs) if (isAdj(s[0], s[s.length - 1], W)) return null;
+  return segs;
+}
+function generatePuzzle(seedKey, size, maxColors) {
+  const rng = mulberry32(hashStr(seedKey));
+  const pairs = Math.min(Math.round(size * 1.25), maxColors);
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const path = hamiltonianPath(size, size, rng);
+    for (let c = 0; c < 30; c++) {
+      const segs = cutSegments(path, size, rng, pairs, maxColors);
+      if (segs) {
+        for (let i = segs.length - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; [segs[i], segs[j]] = [segs[j], segs[i]]; }
+        return { W: size, H: size, solution: segs, ends: segs.map(s => [s[0], s[s.length - 1]]) };
+      }
+    }
+  }
+  throw new Error('generator failed');
+}
+
+// ---------------- palette ----------------
+const COLORS = ['#e4002b', '#0072ce', '#00a651', '#ffc20e', '#f47b20', '#8e44ad', '#00b5e2', '#ec008c',
+  '#8b5a2b', '#7ac943', '#3949ab', '#f49ac1', '#00857c', '#a6192e', '#8a9399', '#b39ddb',
+  '#808000', '#c69c6d', '#ff8a65', '#40c4a4'];
+const LETTERS = 'ABCDEFGHIJKLMNOPQRST';
+function lightColor(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62;
+}
+
+// ---------------- storage (per-device conveniences) ----------------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('lk.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('lk.' + k, JSON.stringify(v)); } catch {} },
+};
+function clientId() {
+  let id = store.get('cid', null);
+  if (!id) {
+    id = (crypto.randomUUID && crypto.randomUUID()) || ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 3) | 8).toString(16);
+    });
+    store.set('cid', id);
+  }
+  return id;
+}
+
+// ---------------- shared stats (optional) ----------------
+async function rpc(fn, body) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+
+// ---------------- dates ----------------
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAILY_SIZE = [11, 7, 8, 9, 9, 10, 11]; // by weekday, Sunday first
+function dateKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function dayNumber(key) {
+  const [y, m, d] = key.split('-').map(Number), [ly, lm, ld] = LAUNCH_DATE.split('-').map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ly, lm - 1, ld)) / 86400000) + 1;
+}
+function levelSize(n) { return Math.min(12, 5 + Math.floor((n - 1) / 10)); }
+function fmtTime(ms) { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+
+// ---------------- game state ----------------
+const $ = id => document.getElementById(id);
+const canvas = $('board'), ctx = canvas.getContext('2d');
+let mode = 'daily';
+let today = dateKey(new Date());
+let level = store.get('level', 1);
+let puz = null, puzId = '', endColor = null;
+let paths = [], history = [], moves = 0, lastMoved = -1, hints = 0;
+let elapsed = 0, startedAt = 0, solved = false, solveTime = 0;
+let drag = null, pointer = null;
+let abc = store.get('abc', false);
+let lastNotice = '';
+
+function cloneP(p) { return p.map(x => x.slice()); }
+
+function loadPuzzle() {
+  let seed, size;
+  if (mode === 'daily') {
+    today = dateKey(new Date());
+    size = DAILY_SIZE[new Date().getDay()];
+    seed = 'daily-' + today;
+    puzId = 'daily:' + today;
+  } else {
+    size = levelSize(level);
+    seed = 'level-' + level;
+    puzId = 'level:' + level;
+  }
+  puz = generatePuzzle(seed, size, COLORS.length);
+  endColor = new Int16Array(size * size).fill(-1);
+  puz.ends.forEach(([a, b], k) => { endColor[a] = k; endColor[b] = k; });
+  const saved = store.get('p.' + puzId, null);
+  if (saved && saved.paths && saved.paths.length === puz.ends.length) {
+    paths = saved.paths; moves = saved.moves || 0; hints = saved.hints || 0; elapsed = saved.elapsed || 0;
+    solved = !!saved.solved; solveTime = saved.solveTime || 0; lastMoved = saved.lastMoved ?? -1;
+  } else {
+    paths = puz.ends.map(() => []); moves = 0; hints = 0; elapsed = 0; solved = false; solveTime = 0; lastMoved = -1;
+  }
+  history = []; startedAt = 0; lastNotice = '';
+  updateSign();
+  resize();
+  updateStats();
+  loadCrowd();
+}
+
+function saveProgress() {
+  store.set('p.' + puzId, { paths, moves, hints, elapsed: currentElapsed(), solved, solveTime, lastMoved });
+}
+function currentElapsed() { return elapsed + (startedAt ? Date.now() - startedAt : 0); }
+function startClock() { if (!solved && !startedAt) startedAt = Date.now(); }
+function stopClock() { if (startedAt) { elapsed += Date.now() - startedAt; startedAt = 0; } }
+
+// ---------------- drawing rules ----------------
+function ownerOf(cell) {
+  for (let k = 0; k < paths.length; k++) { const i = paths[k].indexOf(cell); if (i >= 0) return [k, i]; }
+  return [-1, -1];
+}
+function isComplete(k) {
+  const p = paths[k], [a, b] = puz.ends[k];
+  return p.length >= 2 && ((p[0] === a && p[p.length - 1] === b) || (p[0] === b && p[p.length - 1] === a));
+}
+function beginDrag(cell) {
+  if (solved) return;
+  let k = endColor[cell], cur;
+  if (k >= 0) cur = [cell];
+  else {
+    const [ok, idx] = ownerOf(cell);
+    if (ok < 0) return;
+    k = ok; cur = paths[k].slice(0, idx + 1);
+  }
+  drag = { k, base: cloneP(paths), cur, before: JSON.stringify(paths) };
+  startClock();
+  applyDrag();
+}
+function extendTo(c) {
+  const { k, cur } = drag, head = cur[cur.length - 1];
+  if (!isAdj(head, c, puz.W)) return false;
+  const idx = cur.indexOf(c);
+  if (idx >= 0) { cur.length = idx + 1; applyDrag(); return true; }
+  const [a, b] = puz.ends[k];
+  if (cur.length > 1 && (head === a || head === b)) return false; // already reached its partner
+  const ek = endColor[c];
+  if (ek >= 0 && ek !== k) return false;
+  cur.push(c); applyDrag(); return true;
+}
+function applyDrag() {
+  const { k, base, cur } = drag, set = new Set(cur);
+  for (let j = 0; j < base.length; j++) {
+    if (j === k) continue;
+    const bp = base[j], cut = bp.findIndex(x => set.has(x));
+    paths[j] = cut < 0 ? bp.slice() : bp.slice(0, cut);
+  }
+  paths[k] = cur.slice();
+  render(); updateStats();
+}
+function stepToward(target) {
+  let guard = 64;
+  while (drag && guard-- > 0) {
+    const head = drag.cur[drag.cur.length - 1];
+    if (head === target) return;
+    const hx = head % puz.W, hy = (head / puz.W) | 0, tx = target % puz.W, ty = (target / puz.W) | 0;
+    const dx = tx - hx, dy = ty - hy;
+    const next = Math.abs(dx) >= Math.abs(dy) ? head + Math.sign(dx) : head + Math.sign(dy) * puz.W;
+    if (!extendTo(next)) return;
+  }
+}
+function endDrag() {
+  if (!drag) return;
+  const changed = JSON.stringify(paths) !== drag.before;
+  if (changed) {
+    history.push(JSON.parse(drag.before));
+    if (drag.k !== lastMoved) { moves++; lastMoved = drag.k; }
+  }
+  drag = null; pointer = null;
+  afterChange();
+}
+function afterChange() {
+  render(); updateStats();
+  const st = progress();
+  if (st.connected === puz.ends.length && st.filled === st.total) win();
+  else if (st.connected === puz.ends.length && lastNotice !== 'fill') { lastNotice = 'fill'; toast('Every pair is linked. Now cover every square.'); }
+  saveProgress();
+}
+function progress() {
+  let connected = 0;
+  const N = puz.W * puz.H, seen = new Uint8Array(N);
+  for (let k = 0; k < paths.length; k++) { if (isComplete(k)) connected++; for (const c of paths[k]) seen[c] = 1; }
+  for (const [a, b] of puz.ends) { seen[a] = 1; seen[b] = 1; }
+  let filled = 0; for (let i = 0; i < N; i++) filled += seen[i];
+  return { connected, filled, total: N };
+}
+
+// ---------------- hint / undo / reset ----------------
+function hint() {
+  if (solved) return;
+  const k = puz.solution.findIndex((s, i) => {
+    const p = paths[i];
+    return !(p.length === s.length && (p.every((c, j) => c === s[j]) || p.every((c, j) => c === s[s.length - 1 - j])));
+  });
+  if (k < 0) return;
+  startClock();
+  drag = { k, base: cloneP(paths), cur: puz.solution[k].slice(), before: JSON.stringify(paths) };
+  applyDrag();
+  history.push(JSON.parse(drag.before));
+  drag = null; hints++; lastMoved = -1;
+  afterChange();
+}
+function undo() {
+  if (solved || !history.length) return;
+  paths = history.pop();
+  lastNotice = '';
+  afterChange();
+}
+function reset() {
+  if (solved) { solved = false; solveTime = 0; elapsed = 0; moves = 0; hints = 0; }
+  history.push(cloneP(paths));
+  paths = puz.ends.map(() => []); lastMoved = -1; lastNotice = '';
+  afterChange();
+}
+
+// ---------------- win ----------------
+function win() {
+  if (solved) return;
+  stopClock();
+  solved = true; solveTime = elapsed;
+  const perfect = moves === puz.ends.length && hints === 0;
+  let streak = null;
+  if (mode === 'daily') {
+    const s = store.get('streak', { count: 0, last: '' });
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    if (s.last !== today) { s.count = s.last === dateKey(y) ? s.count + 1 : 1; s.last = today; store.set('streak', s); }
+    streak = s.count;
+    const best = store.get('bestStreak', 0); if (streak > best) store.set('bestStreak', streak);
+  } else {
+    const done = store.get('levelsDone', {});
+    if (!done[level] || done[level].time > solveTime) done[level] = { time: solveTime, moves, perfect };
+    store.set('levelsDone', done);
+  }
+  saveProgress();
+  render(); updateStats();
+  showWin(perfect, streak);
+}
+async function showWin(perfect, streak) {
+  $('winBadge').textContent = perfect ? 'Perfect' : 'Solved';
+  $('winTitle').textContent = mode === 'daily' ? `Daily line No. ${dayNumber(today)} complete` : `Level ${level} complete`;
+  $('winTime').textContent = fmtTime(solveTime);
+  $('winMoves').textContent = moves;
+  if (mode === 'daily') { $('winThird').textContent = streak; $('winThirdLabel').textContent = 'Day streak'; }
+  else { $('winThird').textContent = hints; $('winThirdLabel').textContent = 'Hints'; }
+  $('winNote').textContent = perfect ? 'One move per colour and no hints.' : (hints ? `You used ${hints} hint${hints > 1 ? 's' : ''}.` : 'Try for one move per colour next time.');
+  $('winNext').textContent = mode === 'daily' ? 'Play levels' : (level < LEVEL_COUNT ? `Level ${level + 1}` : 'All levels');
+  setShare(perfect, streak);
+  openSheet('winSheet');
+  if (mode === 'daily') {
+    const r = await rpc('link_record_solve', { p_puzzle: puzId, p_client: clientId(), p_time_ms: Math.round(solveTime), p_moves: moves, p_hints: hints });
+    const row = Array.isArray(r) ? r[0] : r;
+    if (row && row.solvers) {
+      const pct = Math.round(row.faster_pct || 0);
+      $('winNote').textContent = (row.solvers > 1 ? `You were faster than ${pct}% of ${Number(row.solvers).toLocaleString()} solvers today. ` : 'You are the first to solve today\'s line. ') + $('winNote').textContent;
+      showCrowd(row.solvers);
+    }
+  }
+}
+function shareText(perfect, streak) {
+  const head = mode === 'daily'
+    ? `Linkezy No. ${dayNumber(today)} · ${DAY_NAMES[new Date().getDay()]} ${puz.W}×${puz.H}`
+    : `Linkezy Level ${level} · ${puz.W}×${puz.H}`;
+  const line2 = `⏱ ${fmtTime(solveTime)} · ${moves} moves${perfect ? ' · Perfect' : ''}${hints ? ` · ${hints} hint${hints > 1 ? 's' : ''}` : ''}`;
+  const line3 = streak ? `🔥 ${streak}-day streak` : '';
+  return [head, line2, line3, SITE].filter(Boolean).join('\n');
+}
+function setShare(perfect, streak) {
+  const t = shareText(perfect, streak);
+  $('waShare').href = 'https://wa.me/?text=' + encodeURIComponent(t);
+  $('xShare').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(t);
+  $('copyShare').onclick = async () => {
+    try { await navigator.clipboard.writeText(t); $('copyShare').textContent = 'Copied'; }
+    catch { $('copyShare').textContent = 'Copy failed'; }
+    setTimeout(() => { $('copyShare').textContent = 'Copy'; }, 1600);
+  };
+}
+
+// ---------------- crowd ----------------
+async function loadCrowd() {
+  $('crowd').hidden = true;
+  if (mode !== 'daily') return;
+  const r = await rpc('link_solver_count', { p_puzzle: puzId });
+  const n = typeof r === 'number' ? r : (Array.isArray(r) && r[0] ? Object.values(r[0])[0] : null);
+  if (n != null) showCrowd(n);
+}
+function showCrowd(n) {
+  if (mode !== 'daily' || n == null) return;
+  $('crowd').innerHTML = n > 0 ? `<strong>${Number(n).toLocaleString()}</strong> ${n === 1 ? 'player has' : 'players have'} solved today's line` : 'Be the first to solve today\'s line';
+  $('crowd').hidden = false;
+}
+
+// ---------------- UI ----------------
+function updateSign() {
+  if (mode === 'daily') {
+    const d = new Date();
+    $('signNum').textContent = dayNumber(today);
+    $('signTitle').textContent = 'Daily line';
+    $('signSub').textContent = `${DAY_NAMES[d.getDay()]} · ${puz ? puz.W : DAILY_SIZE[d.getDay()]} × ${puz ? puz.H : DAILY_SIZE[d.getDay()]}`;
+    $('levelNav').hidden = true;
+    $('statSideLabel').textContent = 'Time';
+  } else {
+    $('signNum').textContent = level;
+    $('signTitle').textContent = `Level ${level}`;
+    const done = store.get('levelsDone', {});
+    $('signSub').textContent = `${levelSize(level)} × ${levelSize(level)}${done[level] ? ' · cleared' : ''}`;
+    $('levelNav').hidden = false;
+    $('prevLevel').disabled = level <= 1;
+    $('nextLevel').disabled = level >= LEVEL_COUNT;
+  }
+}
+function updateStats() {
+  if (!puz) return;
+  const st = progress();
+  $('statLines').textContent = `${st.connected}/${puz.ends.length}`;
+  $('statFill').textContent = `${Math.round((st.filled / st.total) * 100)}%`;
+  $('statMoves').textContent = moves;
+  $('statSide').textContent = fmtTime(solved ? solveTime : currentElapsed());
+  $('undoBtn').disabled = solved || history.length === 0;
+  $('hintBtn').disabled = solved;
+}
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 2600);
+}
+function openSheet(id) { $(id).hidden = false; }
+function closeSheet(id) { $(id).hidden = true; }
+
+// ---------------- canvas ----------------
+let cssSize = 300, dpr = 1;
+function resize() {
+  const w = $('boardWrap').clientWidth;
+  cssSize = w; dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * dpr);
+  render();
+}
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function render() {
+  if (!puz) return;
+  const W = puz.W, H = puz.H, pad = cssSize * 0.025, cs = (cssSize - pad * 2) / W;
+  const surface = cssVar('--surface'), rule = cssVar('--rule'), ink = cssVar('--ink');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssSize, cssSize);
+  roundRect(0, 0, cssSize, cssSize, 12); ctx.fillStyle = surface; ctx.fill();
+  const cx = c => pad + (c % W) * cs + cs / 2, cy = c => pad + ((c / W) | 0) * cs + cs / 2;
+
+  // grid
+  ctx.strokeStyle = rule; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i <= W; i++) { const x = Math.round(pad + i * cs) + 0.5; ctx.moveTo(x, pad); ctx.lineTo(x, pad + H * cs); }
+  for (let i = 0; i <= H; i++) { const y = Math.round(pad + i * cs) + 0.5; ctx.moveTo(pad, y); ctx.lineTo(pad + W * cs, y); }
+  ctx.stroke();
+
+  // cell tint
+  for (let k = 0; k < paths.length; k++) {
+    if (paths[k].length < 2) continue;
+    ctx.fillStyle = COLORS[k]; ctx.globalAlpha = isComplete(k) ? 0.2 : 0.12;
+    for (const c of paths[k]) ctx.fillRect(pad + (c % W) * cs + 1, pad + ((c / W) | 0) * cs + 1, cs - 1, cs - 1);
+  }
+  ctx.globalAlpha = 1;
+
+  // finger halo
+  if (drag && pointer) {
+    ctx.fillStyle = COLORS[drag.k]; ctx.globalAlpha = 0.18;
+    ctx.beginPath(); ctx.arc(pointer.x, pointer.y, cs * 0.95, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // lines
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let k = 0; k < paths.length; k++) {
+    const p = paths[k];
+    if (p.length < 2) continue;
+    ctx.strokeStyle = COLORS[k]; ctx.lineWidth = cs * (solved ? 0.4 : 0.34);
+    ctx.beginPath(); ctx.moveTo(cx(p[0]), cy(p[0]));
+    for (let i = 1; i < p.length; i++) ctx.lineTo(cx(p[i]), cy(p[i]));
+    ctx.stroke();
+  }
+
+  // dots
+  for (let k = 0; k < puz.ends.length; k++) {
+    const done = isComplete(k);
+    for (const c of puz.ends[k]) {
+      const x = cx(c), y = cy(c);
+      if (done) { ctx.fillStyle = COLORS[k]; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(x, y, cs * 0.47, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = COLORS[k]; ctx.beginPath(); ctx.arc(x, y, cs * 0.35, 0, Math.PI * 2); ctx.fill();
+      if (abc) {
+        ctx.fillStyle = lightColor(COLORS[k]) ? '#1a2025' : '#ffffff';
+        ctx.font = `800 ${Math.round(cs * 0.4)}px Overpass, system-ui, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(LETTERS[k], x, y + cs * 0.035);
+      } else if (done) {
+        ctx.fillStyle = surface; ctx.beginPath(); ctx.arc(x, y, cs * 0.13, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+}
+
+function cellAt(ev) {
+  const r = canvas.getBoundingClientRect();
+  const x = ev.clientX - r.left, y = ev.clientY - r.top;
+  const pad = r.width * 0.025, cs = (r.width - pad * 2) / puz.W;
+  const gx = Math.floor((x - pad) / cs), gy = Math.floor((y - pad) / cs);
+  return { cell: gx >= 0 && gy >= 0 && gx < puz.W && gy < puz.H ? gy * puz.W + gx : -1, x, y };
+}
+canvas.addEventListener('pointerdown', ev => {
+  if (!puz || solved) return;
+  const { cell, x, y } = cellAt(ev);
+  if (cell < 0) return;
+  canvas.setPointerCapture(ev.pointerId);
+  pointer = { x, y };
+  beginDrag(cell);
+  ev.preventDefault();
+});
+canvas.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  const { cell, x, y } = cellAt(ev);
+  pointer = { x, y };
+  if (cell >= 0) stepToward(cell); else render();
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => canvas.addEventListener(t, endDrag));
+
+// ---------------- levels sheet ----------------
+function buildLevelGrid() {
+  const done = store.get('levelsDone', {}), grid = $('levelGrid');
+  grid.innerHTML = '';
+  let cleared = 0;
+  for (let n = 1; n <= LEVEL_COUNT; n++) {
+    if ((n - 1) % 10 === 0) {
+      const band = document.createElement('div'); band.className = 'level-band';
+      band.textContent = `${levelSize(n)} × ${levelSize(n)}`; grid.appendChild(band);
+    }
+    const b = document.createElement('button');
+    b.textContent = n; b.setAttribute('aria-label', `Level ${n}${done[n] ? ', cleared' : ''}`);
+    if (done[n]) { b.classList.add('done'); cleared++; }
+    if (mode === 'levels' && n === level) b.classList.add('current');
+    b.onclick = () => { closeSheet('levelsSheet'); setMode('levels', n); };
+    grid.appendChild(b);
+  }
+  $('levelsSummary').textContent = `${cleared} of ${LEVEL_COUNT} cleared. Boards grow by one row every ten levels.`;
+}
+
+function setMode(m, lvl) {
+  stopClock(); if (puz) saveProgress();
+  mode = m;
+  if (lvl) { level = lvl; store.set('level', level); }
+  $('tabDaily').setAttribute('aria-pressed', String(m === 'daily'));
+  $('tabLevels').setAttribute('aria-pressed', String(m === 'levels'));
+  loadPuzzle();
+}
+
+$('tabDaily').onclick = () => setMode('daily');
+$('tabLevels').onclick = () => setMode('levels');
+$('prevLevel').onclick = () => { if (level > 1) setMode('levels', level - 1); };
+$('nextLevel').onclick = () => { if (level < LEVEL_COUNT) setMode('levels', level + 1); };
+$('undoBtn').onclick = undo;
+$('resetBtn').onclick = reset;
+$('hintBtn').onclick = hint;
+$('abcBtn').onclick = () => { abc = !abc; store.set('abc', abc); $('abcBtn').setAttribute('aria-pressed', String(abc)); render(); };
+$('helpBtn').onclick = () => openSheet('helpSheet');
+$('helpClose').onclick = () => closeSheet('helpSheet');
+$('allLevelsBtn').onclick = () => { buildLevelGrid(); openSheet('levelsSheet'); };
+$('levelsClose').onclick = () => closeSheet('levelsSheet');
+$('winClose').onclick = () => closeSheet('winSheet');
+$('winNext').onclick = () => {
+  closeSheet('winSheet');
+  if (mode === 'daily') setMode('levels', level);
+  else if (level < LEVEL_COUNT) setMode('levels', level + 1);
+  else { buildLevelGrid(); openSheet('levelsSheet'); }
+};
+document.querySelectorAll('.sheet-scrim').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.hidden = true; }));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.sheet-scrim').forEach(s => { s.hidden = true; });
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); }
+});
+
+new ResizeObserver(() => resize()).observe($('boardWrap'));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+document.fonts && document.fonts.ready.then(render);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { stopClock(); if (puz) saveProgress(); } });
+setInterval(() => {
+  if (!puz) return;
+  if (mode === 'daily' && dateKey(new Date()) !== today && !drag) { setMode('daily'); return; }
+  if (!solved) $('statSide').textContent = fmtTime(currentElapsed());
+}, 500);
+
+$('abcBtn').setAttribute('aria-pressed', String(abc));
+if (!store.get('seenHelp', false)) { store.set('seenHelp', true); openSheet('helpSheet'); }
+loadPuzzle();
+</script>
