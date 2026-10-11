@@ -1,0 +1,14 @@
+{
+  // Static-site deploy config for Cloudflare Workers, same setup as the other
+  // bgameworld games. No build step and no server-side code: the game is
+  // public/index.html, served by Workers' static-assets mode. Only public/ is
+  // uploaded, so the README, supabase.sql and .git stay private.
+  //
+  // Deploy step (run by Cloudflare on every push to main): `npx wrangler deploy`
+  "name": "linkezy",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  }
+}

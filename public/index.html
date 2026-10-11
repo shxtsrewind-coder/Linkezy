@@ -1,4 +1,68 @@
-<title>Linkezy</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- Primary SEO -->
+<title>Linkezy — Free Daily Dot Connect Puzzle</title>
+<meta name="description" content="Join each pair of dots with a line, never cross another line, and fill every square. A new board every day plus 100 levels from 5×5 to 12×12.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://linkezy.bgameworld.com/">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e7eae5">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1116">
+<meta name="author" content="bgameworld.com">
+
+<!-- Open Graph -->
+<meta property="og:site_name" content="Linkezy">
+<meta property="og:title" content="Linkezy — Free Daily Dot Connect Puzzle">
+<meta property="og:description" content="Join each pair of dots, never cross a line, and fill every square. A new board every day plus 100 levels.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://linkezy.bgameworld.com/">
+<meta property="og:image" content="https://linkezy.bgameworld.com/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Linkezy — a grid of coloured lines joining pairs of dots">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linkezy — Free Daily Dot Connect Puzzle">
+<meta name="twitter:description" content="Join each pair of dots, never cross a line, and fill every square. A new board every day plus 100 levels.">
+<meta name="twitter:image" content="https://linkezy.bgameworld.com/og-image.jpg">
+<meta name="twitter:image:alt" content="Linkezy — a grid of coloured lines joining pairs of dots">
+
+<!-- Icons & home-screen install -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Linkezy">
+<meta name="application-name" content="Linkezy">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Linkezy",
+  "url": "https://linkezy.bgameworld.com/",
+  "image": "https://linkezy.bgameworld.com/og-image.jpg",
+  "description": "Join each pair of dots with a line, never cross another line, and fill every square. A new board every day plus 100 levels from 5×5 to 12×12.",
+  "genre": ["Puzzle", "Logic Puzzle", "Dot Connect"],
+  "gamePlatform": "Web browser",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any (Web Browser)",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "publisher": { "@type": "Organization", "name": "bgameworld.com", "url": "https://bgameworld.com/" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@600&display=swap">
@@ -143,6 +207,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sign); outline-
 .sheet-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .sheet-actions .btn { flex: 1 1 140px; }
 </style>
+</head>
+<body>
+<noscript>
+  <h1>Linkezy — a free daily dot-connect puzzle</h1>
+  <p>Drag a line between each pair of matching dots. Lines can't cross, and every square on the board has to be covered. There's a new board every day, the same for every player, growing from 7×7 on Monday to 11×11 at the weekend, plus 100 numbered levels from 5×5 to 12×12. Linkezy needs JavaScript to play.</p>
+  <p>More free games at <a href="https://bgameworld.com/">bgameworld.com</a>: <a href="https://wordezy.bgameworld.com/">Wordezy</a>, <a href="https://wordezysearch.bgameworld.com/">Wordezy Search</a>, <a href="https://wordezyscramble.bgameworld.com/">Wordezy Scramble</a>, <a href="https://wordezyladder.bgameworld.com/">Wordezy Ladder</a>, <a href="https://sortezy.bgameworld.com/">Sortezy</a>, <a href="https://lingoezy.bgameworld.com/">Lingoezy</a>, <a href="https://whenandwhere.bgameworld.com/">When &amp; Where</a>.</p>
+</noscript>
 
 <div class="app">
   <header class="top">
@@ -247,7 +318,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sign); outline-
 // Fill these in on bgameworld to turn on shared solver counts (see supabase.sql).
 const SUPABASE_URL = '';
 const SUPABASE_ANON_KEY = '';
-const LAUNCH_DATE = '2026-10-09';       // daily line No. 1
+const LAUNCH_DATE = '2026-10-11';       // daily line No. 1
 const LEVEL_COUNT = 100;
 const SITE = /bgameworld\.com$/.test(location.hostname) ? location.origin : 'https://linkezy.bgameworld.com';
 
@@ -826,3 +897,5 @@ $('abcBtn').setAttribute('aria-pressed', String(abc));
 if (!store.get('seenHelp', false)) { store.set('seenHelp', true); openSheet('helpSheet'); }
 loadPuzzle();
 </script>
+</body>
+</html>
