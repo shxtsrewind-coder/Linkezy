@@ -9,8 +9,8 @@
 <meta name="description" content="Join each pair of dots with a line, never cross another line, and fill every square. A new board every day plus 100 levels from 5×5 to 12×12.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://linkezy.bgameworld.com/">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e7eae5">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1116">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121213">
 <meta name="author" content="bgameworld.com">
 
 <!-- Open Graph -->
@@ -65,31 +65,32 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=Libre+Franklin:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@600&display=swap">
 <style>
 /* Layout: one centred column read like a transit sign — line sign, live stats, square board, controls */
 :root {
-  --bg: #e7eae5;
-  --surface: #f8f9f5;
-  --rule: #d5dad2;
-  --ink: #1a2025;
-  --muted: #59646a;
+  --bg: #ffffff;
+  --surface: #f6f6f3;
+  --rule: #d3d6da;
+  --ink: #121212;
+  --muted: #5c5c5c;
   --sign: #1b3a8c;
   --sign-ink: #ffffff;
-  --good: #1d8549;
-  --scrim: rgba(20, 26, 32, 0.45);
-  --font-display: "Overpass", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-mono: "Overpass Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --good: #3a8b55;
+  --scrim: rgba(255, 255, 255, 0.75);
+  --font-display: "Libre Franklin", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-slab: "Zilla Slab", Rockwell, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d1116; --surface: #151a21; --rule: #262e38; --ink: #e8ecef; --muted: #93a0aa;
+    --bg: #121213; --surface: #1d1d1f; --rule: #333336; --ink: #f2f2f2; --muted: #a3a3a3;
     --sign: #2b52c4; --sign-ink: #ffffff; --good: #46c47c; --scrim: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d1116; --surface: #151a21; --rule: #262e38; --ink: #e8ecef; --muted: #93a0aa;
+  --bg: #121213; --surface: #1d1d1f; --rule: #333336; --ink: #f2f2f2; --muted: #a3a3a3;
   --sign: #2b52c4; --sign-ink: #ffffff; --good: #46c47c; --scrim: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
@@ -182,11 +183,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sign); outline-
 .sheet {
   width: 100%; max-width: 520px; background: var(--surface); color: var(--ink); border-radius: 16px;
   padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 14px; max-height: 86vh; overflow: auto;
-  animation: rise 220ms ease-out;
+  animation: rise 220ms ease-out; box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--rule);
 }
 @keyframes rise { from { transform: translateY(16px); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
-.sheet h2 { margin: 0; font-size: 24px; font-weight: 900; text-wrap: balance; }
+.sheet h2 { margin: 0; font: 700 26px/1.15 var(--font-slab); text-wrap: balance; }
 .sheet p { margin: 0; line-height: 1.5; color: var(--muted); }
 .result-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .result-row div { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 8px 8px; text-align: center; }
